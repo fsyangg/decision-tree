@@ -4,6 +4,8 @@
 #include <vector>
 #include <numeric>
 #include <algorithm>
+#include <queue>
+#include <iostream>
 
 namespace DTree
 {
@@ -16,6 +18,16 @@ struct DecisionNode
   std::unique_ptr<DecisionNode> left;
   std::unique_ptr<DecisionNode> right;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const DecisionNode& dn) {
+  os << "Node{is_leaf=" << dn.is_leaf;
+  os << ", feature_index=" << dn.feature_index;
+  os << ", split=" << dn.split;
+  os << ", has_left=" << (dn.left==nullptr?"false":"true");
+  os << ", has_right=" << (dn.right==nullptr?"false":"true");
+  os << "}";
+  return os;
+}
 
 using X_type = std::vector<std::vector<int>>;
 using Y_type = std::vector<int>;
@@ -40,11 +52,30 @@ public:
     return 0;
   }
 
+  DecisionNode* Root() {return root_.get();}
+
+  void Display() {
+    std::queue<DecisionNode*> q;
+    q.push(root_.get());
+    int cnt {0};
+    while (!q.empty()) {
+      std::cout << "level " << cnt++ << '\n';
+      int sz = q.size();
+      for (int i = 0; i < sz; i++) {
+        auto top = q.front(); q.pop();
+        std::cout << *top << '\n';
+        if (top->left != nullptr) q.push(top->left.get());
+        if (top->right != nullptr) q.push(top->right.get());
+      }
+    }
+    std::cout << "done\n";
+  }
+
 private:
   std::unique_ptr<DecisionNode> BuildTree(const X_type& X, const Y_type& Y, int depth) {
     int K = NumCategories(Y);
     if (StoppingCondition(X, Y, depth)) {
-      return std::make_unique<DecisionNode>(DecisionNode{false, 0, 0.0});
+      return std::make_unique<DecisionNode>(DecisionNode{false, -1, 0.0});
     }
 
     auto [best_feature_idx, best_split] = FindBestSplit(X, Y, K);
@@ -105,6 +136,7 @@ private:
         if (score > best_score) {
           best_score = score;
           best_feature = f_idx;
+          // TODO: this can go out of bounds, when i == indices.size() - 1
           best_split = ((float)X[indices[i+1]][f_idx] + x) / 2;
         }
       }
