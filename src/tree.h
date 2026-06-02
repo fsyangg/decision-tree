@@ -16,6 +16,7 @@ struct DecisionNode
   float threshold;
   std::unique_ptr<DecisionNode> left;
   std::unique_ptr<DecisionNode> right;
+  int predicted_class;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const DecisionNode& dn) {
@@ -24,6 +25,7 @@ inline std::ostream& operator<<(std::ostream& os, const DecisionNode& dn) {
   os << ", threshold=" << dn.threshold;
   os << ", has_left=" << (dn.left==nullptr?"false":"true");
   os << ", has_right=" << (dn.right==nullptr?"false":"true");
+  if (dn.is_leaf) os << ", predicted_class=" << dn.predicted_class;
   os << "}";
   return os;
 }
@@ -50,7 +52,17 @@ public:
 
   int Predict(const std::vector<int>& f_row)
   {
-    return 0;
+    DecisionNode* c = root_.get();
+    while (!c->is_leaf) {
+      int f{c->feature_index};
+      float t{c->threshold};
+      if ((float)f_row[f] >= t) {
+        c = c->right.get();
+      } else {
+        c = c->left.get();
+      }
+    }
+    return c->predicted_class;
   }
 
   DecisionNode* Root()
@@ -81,7 +93,15 @@ private:
   {
     int K = NumCategories(Y);
     if (StoppingCondition(X, Y, depth)) {
-      return std::make_unique<DecisionNode>(DecisionNode{false, -1, 0.0});
+      std::vector<int> cnt(Y);
+      int mx{0}, mxcnt{0};
+      for (auto x : Y) {
+        if (++cnt[x] > mxcnt) {
+          mxcnt = cnt[x];
+          mx = x;
+        }
+      }
+      return std::make_unique<DecisionNode>(DecisionNode{true, -1, 0.0, nullptr, nullptr, mx});
     }
 
     auto [best_feature_idx, best_threshold] = FindBestThreshold(X, Y, K);

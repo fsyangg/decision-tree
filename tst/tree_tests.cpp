@@ -11,9 +11,11 @@ TEST(Sanity, Addition) {
 }
 
 using Data = std::pair<std::vector<std::vector<int>>, std::vector<int>>;
-class TennisTest : public ::testing::Test {
+class TennisTest : public ::testing::Test
+{
 protected:
-  void SetUp() override {
+  void SetUp() override
+  {
     const auto path = std::filesystem::path{"datasets"} / "tennis.csv";
     io::CSVReader<5> in(path.string());
     int outlook = 0;
@@ -30,6 +32,20 @@ protected:
     }
     data = {std::move(row_data), std::move(target_data)};
   }
+
+  float Accuracy(const std::vector<int>& predictions)
+  {
+    float n{(float)predictions.size()};
+    float cnt{0.0};
+    for (int i = 0; i < n; i++) {
+      if (predictions[i] == data.second[i]) cnt++;
+    }
+    if constexpr (DEBUG) {
+      std::cout << n << " samples, " << cnt << " correct\n";
+    }
+    return cnt / n;
+  }
+
   Data data;
 };
 
@@ -46,6 +62,17 @@ TEST_F(TennisTest, TreeNotNull) {
     tree.Display();
   }
   EXPECT_NE(tree.Root(), nullptr);
+}
+
+TEST_F(TennisTest, SimplePrediction) {
+  using namespace DTree;
+  auto tree = NodeDTree(1, 1, 10);
+  tree.Fit(data);
+  std::vector<int> predictions;
+  for (const auto& row : data.first) {
+    predictions.push_back(tree.Predict(row));
+  }
+  EXPECT_GT(Accuracy(predictions), 0.5);
 }
 
 int main(int argc, char **argv) {
