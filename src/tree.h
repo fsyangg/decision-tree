@@ -9,12 +9,11 @@
 
 namespace DTree
 {
-using Split = float;
 struct DecisionNode
 {
   bool is_leaf;
   int feature_index;
-  Split split;
+  float threshold;
   std::unique_ptr<DecisionNode> left;
   std::unique_ptr<DecisionNode> right;
 };
@@ -22,7 +21,7 @@ struct DecisionNode
 inline std::ostream& operator<<(std::ostream& os, const DecisionNode& dn) {
   os << "Node{is_leaf=" << dn.is_leaf;
   os << ", feature_index=" << dn.feature_index;
-  os << ", split=" << dn.split;
+  os << ", threshold=" << dn.threshold;
   os << ", has_left=" << (dn.left==nullptr?"false":"true");
   os << ", has_right=" << (dn.right==nullptr?"false":"true");
   os << "}";
@@ -38,23 +37,29 @@ class NodeDTree
 {
 public:
   NodeDTree(int min_samples_split, int min_samples_leaf, int max_depth)
-      : min_samples_split_(min_samples_split),
+      : min_samples_(min_samples_split),
         min_samples_leaf_(min_samples_leaf),
         max_depth_(max_depth) {}
 
-  void Fit(const Data& data) {
+  void Fit(const Data& data)
+  {
     X_type X {data.first};
     Y_type Y {data.second}; 
     root_ = BuildTree(X, Y, 0);
   }
 
-  int Predict(const std::vector<int>& f_row) {
+  int Predict(const std::vector<int>& f_row)
+  {
     return 0;
   }
 
-  DecisionNode* Root() {return root_.get();}
+  DecisionNode* Root()
+  {
+    return root_.get();
+  }
 
-  void Display() {
+  void Display()
+  {
     std::queue<DecisionNode*> q;
     q.push(root_.get());
     int cnt {0};
@@ -72,18 +77,19 @@ public:
   }
 
 private:
-  std::unique_ptr<DecisionNode> BuildTree(const X_type& X, const Y_type& Y, int depth) {
+  std::unique_ptr<DecisionNode> BuildTree(const X_type& X, const Y_type& Y, int depth)
+  {
     int K = NumCategories(Y);
     if (StoppingCondition(X, Y, depth)) {
       return std::make_unique<DecisionNode>(DecisionNode{false, -1, 0.0});
     }
 
-    auto [best_feature_idx, best_split] = FindBestSplit(X, Y, K);
+    auto [best_feature_idx, best_threshold] = FindBestThreshold(X, Y, K);
     X_type X_left, X_right;
     Y_type Y_left, Y_right;
 
     for (int i = 0; i < X.size(); i++) {
-      if (X[i][best_feature_idx] < best_split) {
+      if (X[i][best_feature_idx] < best_threshold) {
         X_left.push_back(X[i]);
         Y_left.push_back(Y[i]);
       } else {
@@ -92,14 +98,15 @@ private:
       }
     }
 
-    auto node {std::make_unique<DecisionNode>(DecisionNode{false, best_feature_idx, best_split})};
+    auto node {std::make_unique<DecisionNode>(DecisionNode{false, best_feature_idx, best_threshold})};
     node->left = BuildTree(X_left, Y_left, depth + 1);
     node->right = BuildTree(X_right, Y_right, depth + 1);
 
     return node;
   }
 
-  int NumCategories(const Y_type& Y) {
+  int NumCategories(const Y_type& Y)
+  {
     std::vector<int> a(Y.size(), 0);
     int cnt {0};
     for (auto& elt : Y) {
@@ -108,12 +115,13 @@ private:
     return cnt;
   }
 
-  std::pair<int, Split> FindBestSplit(const X_type& X, const Y_type& Y, int K) {
+  std::pair<int, float> FindBestThreshold(const X_type& X, const Y_type& Y, int K)
+  {
     const auto fcnt {X[0].size()};
     const auto n {X.size()};
 
     int best_feature {-1};
-    float best_split {0.0};
+    float best_threshold {0.0};
     float best_score {0.0};
 
     for (int f_idx = 0; f_idx < fcnt; f_idx++) {
@@ -137,14 +145,15 @@ private:
           best_score = score;
           best_feature = f_idx;
           // TODO: this can go out of bounds, when i == indices.size() - 1
-          best_split = ((float)X[indices[i+1]][f_idx] + x) / 2;
+          best_threshold = ((float)X[indices[i+1]][f_idx] + x) / 2;
         }
       }
     }
-    return {best_feature, best_split};
+    return {best_feature, best_threshold};
   }
 
-  std::vector<int> GetIndexArray(const X_type& X, int feature_index) {
+  std::vector<int> GetIndexArray(const X_type& X, int feature_index)
+  {
     std::vector<int> idx(X.size());
     std::iota(idx.begin(), idx.end(), 0);
 
@@ -154,7 +163,8 @@ private:
     return idx;
   }
 
-  float Gini(const std::vector<int>& counts, int n) {
+  float Gini(const std::vector<int>& counts, int n)
+  {
     if (n == 0) return 0.0;
     float sum_sq {0.0};
     for (const auto e : counts) {
@@ -164,10 +174,11 @@ private:
     return 1.0 - sum_sq;
   }
 
-  bool StoppingCondition(const X_type& X, const Y_type& Y, int depth) {
+  bool StoppingCondition(const X_type& X, const Y_type& Y, int depth)
+  {
     const int n = Y.size();
 
-    if (n < min_samples_split_) return true;
+    if (n < min_samples_) return true;
     if (n < 2 * min_samples_leaf_) return true;
     if (depth > max_depth_) return true;
     if (std::adjacent_find(Y.begin(), Y.end(), std::not_equal_to<>{}) == Y.end()) return true;
@@ -177,7 +188,7 @@ private:
   }
 
   std::unique_ptr<DecisionNode> root_;
-  int min_samples_split_;
+  int min_samples_;
   int min_samples_leaf_;
   int max_depth_;
 };
