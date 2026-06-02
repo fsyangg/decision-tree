@@ -11,42 +11,40 @@ TEST(Sanity, Addition) {
 }
 
 using Data = std::pair<std::vector<std::vector<int>>, std::vector<int>>;
-class TennisTest : public ::testing::Test
+class DatasetTest : public ::testing::Test
+{
+protected:
+  double Accuracy(const std::vector<int>& predictions)
+  {
+    double cnt{0};
+    double n{static_cast<double>(predictions.size())};
+    for (int i = 0; i < predictions.size(); i++) {
+      if (predictions[i] == data.second[i]) cnt++;
+    }
+    if constexpr (DEBUG) {
+      std::cout << predictions.size() << " samples, " << cnt << " correct\n";
+    }
+    return cnt / n;
+  }
+  DTree::Data data;
+};
+
+class TennisTest : public DatasetTest
 {
 protected:
   void SetUp() override
   {
     const auto path = std::filesystem::path{"datasets"} / "tennis.csv";
     io::CSVReader<5> in(path.string());
-    int outlook = 0;
-    int temperature = 0;
-    int humidity = 0;
-    int wind = 0;
-    int play = 0;
-
+    std::array<int, 5> a;
     std::vector<std::vector<int>> row_data;
     std::vector<int> target_data;
-    while (in.read_row(outlook, temperature, humidity, wind, play)) {
-      row_data.push_back({outlook, temperature, humidity, wind});
-      target_data.push_back(play);
+    while (in.read_row(a[0], a[1], a[2], a[3], a[4])) {
+      row_data.push_back({a[0], a[1], a[2], a[3]});
+      target_data.push_back(a[4]);
     }
     data = {std::move(row_data), std::move(target_data)};
   }
-
-  float Accuracy(const std::vector<int>& predictions)
-  {
-    float n{(float)predictions.size()};
-    float cnt{0.0};
-    for (int i = 0; i < n; i++) {
-      if (predictions[i] == data.second[i]) cnt++;
-    }
-    if constexpr (DEBUG) {
-      std::cout << n << " samples, " << cnt << " correct\n";
-    }
-    return cnt / n;
-  }
-
-  Data data;
 };
 
 TEST_F(TennisTest, LoadsTennis) {
