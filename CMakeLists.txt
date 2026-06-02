@@ -8,9 +8,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(benchmark REQUIRED)
 find_package(GTest REQUIRED)
 
-add_executable(tree_exe src/main.cpp src/csv.h)
-add_executable(tree_benchmark bench/tree_benchmark.cpp src/csv.h)
-add_executable(tree_tests tst/tree_tests.cpp src/csv.h)
+add_executable(tree_exe src/main.cpp src/csv.h src/tree.h)
+add_executable(tree_benchmark bench/tree_benchmark.cpp src/csv.h src/tree.h)
+add_executable(tree_tests tst/tree_tests.cpp src/csv.h src/tree.h)
 
 foreach(target tree_exe tree_benchmark tree_tests)
     target_include_directories(${target} PRIVATE src)
