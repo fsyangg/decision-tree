@@ -88,7 +88,12 @@ public:
     std::cout << "done\n";
   }
 
-private:
+  std::pair<int, float> PublicFindBestThreshold(const X_type& X, const Y_type& Y, int K)
+  {
+    return FindBestThreshold(X, Y, K);
+  }
+
+// private:
   std::unique_ptr<DecisionNode> BuildTree(const X_type& X, const Y_type& Y, int depth)
   {
     int K = NumCategories(Y);
@@ -137,12 +142,12 @@ private:
 
   std::pair<int, float> FindBestThreshold(const X_type& X, const Y_type& Y, int K)
   {
-    const auto fcnt {X[0].size()};
-    const auto n {X.size()};
+    const auto fcnt{X[0].size()};
+    const auto n{X.size()};
 
-    int best_feature {-1};
-    float best_threshold {0.0};
-    float best_score {0.0};
+    int best_feature{-1};
+    float best_threshold{-1};
+    float best_score{2.0};
 
     for (int f_idx = 0; f_idx < fcnt; f_idx++) {
       auto indices {GetIndexArray(X, f_idx)};
@@ -152,16 +157,16 @@ private:
       std::vector<int> right_counts(K, 0);
       std::vector<int> left_counts(K, 0);
       for (auto e : Y) right_counts[e]++;
-
       for (int i = 0; i < indices.size(); i++) {
-        int sorted_idx {indices[i]};
-        int x {X[sorted_idx][f_idx]};
-        int y {Y[sorted_idx]};
+        // something is wrong here
+        int sorted_idx{indices[i]};
+        int x{X[sorted_idx][f_idx]};
+        int y{Y[sorted_idx]};
         right_counts[y]--;
         left_counts[y]++;
 
-        float score {(Gini(right_counts, n-i) + Gini(left_counts, i)) / 2};
-        if (score > best_score) {
+        float score{(Gini(right_counts, n-i-1) + Gini(left_counts, i+1)) / 2};
+        if (score < best_score) {
           best_score = score;
           best_feature = f_idx;
           // TODO: this can go out of bounds, when i == indices.size() - 1
