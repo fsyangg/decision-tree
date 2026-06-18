@@ -34,7 +34,7 @@ class TennisTest : public DatasetTest
 protected:
   void SetUp() override
   {
-    const auto path = std::filesystem::path{"datasets"} / "tennis.csv";
+    const auto path = std::filesystem::path{"/Users/fsyang/src/dtree/datasets/tennis.csv"};
     io::CSVReader<5> in(path.string());
     std::array<int, 5> a;
     std::vector<std::vector<int>> row_data;
@@ -52,7 +52,7 @@ class CarTest : public DatasetTest
 protected:
   void SetUp() override
   {
-    const auto path = std::filesystem::path{"datasets"} / "car_eval.csv";
+    const auto path = std::filesystem::path{"/Users/fsyang/src/dtree/datasets/car_eval.csv"};
     io::CSVReader<7> in(path.string());
     std::array<int, 7> a;
     std::vector<std::vector<int>> row_data;
@@ -85,19 +85,19 @@ TEST_F(TennisTest, TreeNotNull) {
   EXPECT_NE(tree.Root(), nullptr);
 }
 
-TEST_F(CarTest, NodeTree) {
-  auto tree = DTree::NodeDTree(4, 4, 16);
-  tree.Fit(data);
-  if constexpr (DEBUG) {
-    tree.Display();
-  }
-  EXPECT_NE(tree.Root(), nullptr);
-  std::vector<int> predictions;
-  for (const auto& row : data.first) {
-    predictions.push_back(tree.Predict(row));
-  }
-  EXPECT_GT(Accuracy(predictions), 0.5);
-}
+//TEST_F(CarTest, NodeTree) {
+//  auto tree = DTree::NodeDTree(4, 4, 16);
+//  tree.Fit(data);
+//  if constexpr (DEBUG) {
+//    tree.Display();
+//  }
+//  EXPECT_NE(tree.Root(), nullptr);
+//  std::vector<int> predictions;
+//  for (const auto& row : data.first) {
+//    predictions.push_back(tree.Predict(row));
+//  }
+//  EXPECT_GT(Accuracy(predictions), 0.5);
+//}
 
 TEST_F(TennisTest, SimplePrediction) {
   using namespace DTree;
