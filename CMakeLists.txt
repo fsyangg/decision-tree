@@ -10,7 +10,7 @@ find_package(GTest REQUIRED)
 
 add_executable(tree_exe src/main.cpp src/csv.h src/tree.h)
 add_executable(tree_benchmark bench/tree_benchmark.cpp src/csv.h src/tree.h)
-add_executable(tree_tests tst/tree_tests.cpp src/csv.h src/tree.h)
+add_executable(tree_tests tst/tree_tests.cpp tst/unit_tests.cpp src/csv.h src/tree.h)
 
 foreach(target tree_exe tree_benchmark tree_tests)
     target_include_directories(${target} PRIVATE src)
@@ -19,9 +19,10 @@ endforeach()
 
 target_compile_options(tree_exe PRIVATE -O3 -DNDEBUG)
 target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
+target_compile_options(tree_tests PRIVATE -O3 -DNDEBUG)
 
 target_link_libraries(tree_benchmark PRIVATE benchmark::benchmark_main)
-target_link_libraries(tree_tests PRIVATE GTest::gtest)
+target_link_libraries(tree_tests PRIVATE GTest::gtest_main)
 
 enable_testing()
 add_test(NAME tree_tests COMMAND tree_tests)
