@@ -12,17 +12,20 @@ add_executable(tree_exe
     src/cppsrc/main.cpp
     src/cppsrc/csv.h
     src/cppsrc/tree.h
+    src/cppsrc/node_tree.h
 )
 add_executable(tree_benchmark
     bench/tree_benchmark.cpp
     src/cppsrc/csv.h
     src/cppsrc/tree.h
+    src/cppsrc/node_tree.h
 )
 add_executable(tree_tests
     tst/tree_tests.cpp
     tst/unit_tests.cpp
     src/cppsrc/csv.h
     src/cppsrc/tree.h
+    src/cppsrc/node_tree.h
 )
 
 foreach(target tree_exe tree_benchmark tree_tests)

@@ -1,5 +1,6 @@
 #include "csv.h"
 #include "tree.h"
+#include "node_tree.h"
 
 #include <gtest/gtest.h>
 #include <filesystem>
@@ -76,8 +77,7 @@ TEST_F(CarTest, LoadsCar) {
 }
 
 TEST_F(TennisTest, TreeNotNull) {
-  using namespace DTree;
-  auto tree = NodeDTree(1, 1, 1);
+  auto tree = DTree::NodeTree(1, 1, 1);
   tree.Fit(data);
   if constexpr (DEBUG) {
     tree.Display();
@@ -86,7 +86,7 @@ TEST_F(TennisTest, TreeNotNull) {
 }
 
 TEST_F(CarTest, NodeTree) {
-  auto tree = DTree::NodeDTree(4, 4, 16);
+  auto tree = DTree::NodeTree(4, 4, 16);
   tree.Fit(data);
   if constexpr (DEBUG) {
     tree.Display();
@@ -100,8 +100,7 @@ TEST_F(CarTest, NodeTree) {
 }
 
 TEST_F(TennisTest, SimplePrediction) {
-  using namespace DTree;
-  auto tree = NodeDTree(1, 1, 10);
+  auto tree = DTree::NodeTree(1, 1, 10);
   tree.Fit(data);
   std::vector<int> predictions;
   for (const auto& row : data.first) {
