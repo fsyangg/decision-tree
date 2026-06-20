@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
-constexpr bool DEBUG{true};
+constexpr bool DEBUG{false};
 
 TEST(Sanity, Addition) {
   EXPECT_EQ(2 + 2, 4);
@@ -85,19 +85,19 @@ TEST_F(TennisTest, TreeNotNull) {
   EXPECT_NE(tree.Root(), nullptr);
 }
 
-//TEST_F(CarTest, NodeTree) {
-//  auto tree = DTree::NodeDTree(4, 4, 16);
-//  tree.Fit(data);
-//  if constexpr (DEBUG) {
-//    tree.Display();
-//  }
-//  EXPECT_NE(tree.Root(), nullptr);
-//  std::vector<int> predictions;
-//  for (const auto& row : data.first) {
-//    predictions.push_back(tree.Predict(row));
-//  }
-//  EXPECT_GT(Accuracy(predictions), 0.5);
-//}
+TEST_F(CarTest, NodeTree) {
+  auto tree = DTree::NodeDTree(4, 4, 16);
+  tree.Fit(data);
+  if constexpr (DEBUG) {
+    tree.Display();
+  }
+  EXPECT_NE(tree.Root(), nullptr);
+  std::vector<int> predictions;
+  for (const auto& row : data.first) {
+    predictions.push_back(tree.Predict(row));
+  }
+  EXPECT_GT(Accuracy(predictions), 0.5);
+}
 
 TEST_F(TennisTest, SimplePrediction) {
   using namespace DTree;
@@ -108,9 +108,4 @@ TEST_F(TennisTest, SimplePrediction) {
     predictions.push_back(tree.Predict(row));
   }
   EXPECT_GT(Accuracy(predictions), 0.5);
-}
-
-int main(int argc, char **argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

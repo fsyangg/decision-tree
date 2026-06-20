@@ -1,4 +1,5 @@
 #include "csv.h"
+#include "tree.h"
 
 #include <filesystem>
 #include <iostream>
@@ -32,4 +33,7 @@ int main() {
     const auto [rows, targets] = load_tennis_data();
     std::cout << "loaded tennis rows: " << rows.size()
         << ", labels: " << targets.size() << '\n';
+
+    DTree::NodeDTree tree = DTree::NodeDTree(4, 4, 4);
+    tree.Fit({rows, targets});
 }

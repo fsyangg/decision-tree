@@ -8,18 +8,28 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(benchmark REQUIRED)
 find_package(GTest REQUIRED)
 
-add_executable(tree_exe src/main.cpp src/csv.h src/tree.h)
-add_executable(tree_benchmark bench/tree_benchmark.cpp src/csv.h src/tree.h)
-add_executable(tree_tests tst/tree_tests.cpp tst/unit_tests.cpp src/csv.h src/tree.h)
+add_executable(tree_exe
+    src/cppsrc/main.cpp
+    src/cppsrc/csv.h
+    src/cppsrc/tree.h
+)
+add_executable(tree_benchmark
+    bench/tree_benchmark.cpp
+    src/cppsrc/csv.h
+    src/cppsrc/tree.h
+)
+add_executable(tree_tests
+    tst/tree_tests.cpp
+    tst/unit_tests.cpp
+    src/cppsrc/csv.h
+    src/cppsrc/tree.h
+)
 
 foreach(target tree_exe tree_benchmark tree_tests)
-    target_include_directories(${target} PRIVATE src)
+    target_include_directories(${target} PRIVATE src/cppsrc)
     target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_options(${target} PRIVATE -O3 -DNDEBUG)
 endforeach()
-
-target_compile_options(tree_exe PRIVATE -O3 -DNDEBUG)
-target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
-target_compile_options(tree_tests PRIVATE -O3 -DNDEBUG)
 
 target_link_libraries(tree_benchmark PRIVATE benchmark::benchmark_main)
 target_link_libraries(tree_tests PRIVATE GTest::gtest_main)
