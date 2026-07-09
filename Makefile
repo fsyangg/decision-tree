@@ -1,6 +1,8 @@
-.PHONY: build test benchmark clean
+.PHONY: build test benchmark bench-py clean
 
 BUILD_TYPE ?= Release
+VENV ?= .venv
+PY := $(VENV)/bin/python
 
 build:
 	conan install . --build=missing
@@ -13,5 +15,12 @@ test: build
 benchmark: build
 	./build/tree_benchmark
 
+$(VENV):
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -q -r bench/pybench/requirements.txt
+
+bench-py: $(VENV)
+	$(PY) bench/pybench/bench.py --json bench/results/sklearn.json
+
 clean:
-	rm -rf build
+	rm -rf build $(VENV)

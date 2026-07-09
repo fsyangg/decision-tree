@@ -1,0 +1,70 @@
+{
+  "impl": "sklearn",
+  "sklearn_version": "1.9.0",
+  "python": "3.14.3",
+  "machine": "arm64",
+  "params": {
+    "criterion": "gini",
+    "max_depth": null,
+    "min_samples_split": 2,
+    "min_samples_leaf": 1
+  },
+  "results": [
+    {
+      "dataset": "tennis",
+      "rows": 14,
+      "features": 4,
+      "classes": 2,
+      "fit_ms_min": 0.17221028929270688,
+      "fit_ms_median": 0.17426236718165455,
+      "predict_ms_min": 0.0196994628822722,
+      "predict_ms_median": 0.01989799022794614,
+      "predict_ns_per_row": 1407.1044915908715,
+      "train_accuracy": 1.0,
+      "node_count": 13,
+      "depth": 4
+    },
+    {
+      "dataset": "zoo",
+      "rows": 101,
+      "features": 16,
+      "classes": 7,
+      "fit_ms_min": 0.1979681014745438,
+      "fit_ms_median": 0.1987698594803078,
+      "predict_ms_min": 0.021364216763686272,
+      "predict_ms_median": 0.021627685555358767,
+      "predict_ns_per_row": 211.52689865035913,
+      "train_accuracy": 1.0,
+      "node_count": 19,
+      "depth": 7
+    },
+    {
+      "dataset": "car_eval",
+      "rows": 1728,
+      "features": 6,
+      "classes": 4,
+      "fit_ms_min": 0.4161660153840785,
+      "fit_ms_median": 0.42715300060081063,
+      "predict_ms_min": 0.039537353586638346,
+      "predict_ms_median": 0.04011189844277396,
+      "predict_ns_per_row": 22.880412955230526,
+      "train_accuracy": 1.0,
+      "node_count": 187,
+      "depth": 14
+    },
+    {
+      "dataset": "mushroom",
+      "rows": 8124,
+      "features": 22,
+      "classes": 2,
+      "fit_ms_min": 4.540364629065152,
+      "fit_ms_median": 4.563351558317663,
+      "predict_ms_min": 0.11494401178424596,
+      "predict_ms_median": 0.11631250004029425,
+      "predict_ns_per_row": 14.148696674574834,
+      "train_accuracy": 1.0,
+      "node_count": 39,
+      "depth": 7
+    }
+  ]
+}
