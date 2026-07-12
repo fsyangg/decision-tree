@@ -96,6 +96,8 @@ TEST_F(CarTest, NodeTree) {
   for (const auto& row : data.first) {
     predictions.push_back(tree.Predict(row));
   }
+  auto acc{Accuracy(predictions)};
+  std::cout << "accuracy: " << acc << std::endl;
   EXPECT_GT(Accuracy(predictions), 0.5);
 }
 
@@ -106,5 +108,7 @@ TEST_F(TennisTest, SimplePrediction) {
   for (const auto& row : data.first) {
     predictions.push_back(tree.Predict(row));
   }
+  auto acc{Accuracy(predictions)};
+  std::cout << "accuracy: " << acc << std::endl;
   EXPECT_GT(Accuracy(predictions), 0.5);
 }

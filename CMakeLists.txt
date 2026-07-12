@@ -9,27 +9,27 @@ find_package(benchmark REQUIRED)
 find_package(GTest REQUIRED)
 
 add_executable(tree_exe
-    src/cppsrc/main.cpp
-    src/cppsrc/csv.h
-    src/cppsrc/tree.h
-    src/cppsrc/node_tree.h
+    src/main.cpp
+    src/csv.h
+    src/tree.h
+    src/node_tree.h
 )
 add_executable(tree_benchmark
-    bench/tree_benchmark.cpp
-    src/cppsrc/csv.h
-    src/cppsrc/tree.h
-    src/cppsrc/node_tree.h
+    bench/cppbench/tree_benchmark.cpp
+    src/csv.h
+    src/tree.h
+    src/node_tree.h
 )
 add_executable(tree_tests
     tst/tree_tests.cpp
     tst/unit_tests.cpp
-    src/cppsrc/csv.h
-    src/cppsrc/tree.h
-    src/cppsrc/node_tree.h
+    src/csv.h
+    src/tree.h
+    src/node_tree.h
 )
 
 foreach(target tree_exe tree_benchmark tree_tests)
-    target_include_directories(${target} PRIVATE src/cppsrc)
+    target_include_directories(${target} PRIVATE src)
     target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
     target_compile_options(${target} PRIVATE -O3 -DNDEBUG)
 endforeach()

@@ -83,17 +83,11 @@ public:
     std::cout << "done\n";
   }
 
-  std::pair<int, float> PublicFindBestThreshold(const X_type& X, const Y_type& Y, int K)
-  {
-    return FindBestThreshold(X, Y, K);
-  }
-
-// private:
   std::unique_ptr<Node> BuildTree(const X_type& X, const Y_type& Y, int depth)
   {
     int K = NumCategories(Y);
     if (StoppingCondition(X, Y, depth)) {
-      std::vector<int> cnt(Y);
+      std::vector<int> cnt(K);
       int mx{0}, mxcnt{0};
       for (auto x : Y) {
         if (++cnt[x] > mxcnt) {
@@ -135,6 +129,11 @@ public:
     return cnt;
   }
 
+  /**
+   * X is feature matrix (feature rows)
+   * Y is column of categories
+   * K is no of categories
+   */
   std::pair<int, float> FindBestThreshold(const X_type& X, const Y_type& Y, int K)
   {
     const auto fcnt{X[0].size()};
@@ -147,24 +146,25 @@ public:
     for (int f_idx = 0; f_idx < fcnt; f_idx++) {
       auto indices {GetIndexArray(X, f_idx)};
 
-      // assume categories are numbered 0...n-1
-      // then there are at most n-1 categories
+      // we have at most K categories
       std::vector<int> right_counts(K, 0);
       std::vector<int> left_counts(K, 0);
       for (auto e : Y) right_counts[e]++;
-      for (int i = 0; i < indices.size(); i++) {
-        // something is wrong here
+      for (int i = 0; i < indices.size() - 1; i++) {
         int sorted_idx{indices[i]};
         int x{X[sorted_idx][f_idx]};
         int y{Y[sorted_idx]};
         right_counts[y]--;
         left_counts[y]++;
 
-        float score{(Gini(right_counts, n-i-1) + Gini(left_counts, i+1)) / 2};
+        // if the current val is the same as the next one, there's no split to consider
+        // between them
+        if (X[indices[i+1]][f_idx] == X[indices[i]][f_idx]) continue;
+
+        float score{((i+1) * Gini(left_counts, i+1) + (n-i-1) * Gini(right_counts, n-i-1)) / n};
         if (score < best_score) {
           best_score = score;
           best_feature = f_idx;
-          // TODO: this can go out of bounds, when i == indices.size() - 1
           best_threshold = ((float)X[indices[i+1]][f_idx] + x) / 2;
         }
       }

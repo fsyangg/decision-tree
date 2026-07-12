@@ -49,7 +49,7 @@ TEST(UnitNodeTree, FindBestSplit) {
     0
   };
   auto tree{DTree::NodeTree(1, 1, 1)};
-  auto [idx, threshold] = tree.PublicFindBestThreshold(feature_rows, labels, 2);
+  auto [idx, threshold] = tree.FindBestThreshold(feature_rows, labels, 2);
   EXPECT_EQ(idx, 0);
   EXPECT_EQ(threshold, 2.5);
 }

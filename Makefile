@@ -12,7 +12,7 @@ build:
 test: build
 	ctest --test-dir build --output-on-failure
 
-benchmark: build
+bench-cpp: build
 	./build/tree_benchmark
 
 $(VENV):
@@ -20,7 +20,7 @@ $(VENV):
 	$(VENV)/bin/pip install -q -r bench/pybench/requirements.txt
 
 bench-py: $(VENV)
-	$(PY) bench/pybench/bench.py --json bench/results/sklearn.json
+	$(PY) -m pytest bench/pybench --benchmark-json=bench/results/sklearn.json
 
 clean:
 	rm -rf build $(VENV)

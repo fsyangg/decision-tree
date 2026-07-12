@@ -25,5 +25,3 @@ DATASETS = [
     Dataset("car_eval", "car_eval.csv", -1),
     Dataset("mushroom", "mushroom.csv", 0),
 ]
-
-BY_NAME = {d.name: d for d in DATASETS}
