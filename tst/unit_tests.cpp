@@ -7,7 +7,7 @@ TEST(Unit, Sanity) {
 }
 
 TEST(UnitNodeTree, GetIndexArray) {
-  auto tree{DTree::NodeTree(1, 1, 1)};
+  auto tree{tree::NodeTree(1, 1, 1)};
   std::vector<std::vector<int>> rows{
     {1, 2, 3},
     {2, 3, 1},
@@ -24,7 +24,7 @@ TEST(UnitNodeTree, GetIndexArray) {
 }
 
 TEST(UnitNodeTree, Gini) {
-  auto tree{DTree::NodeTree(1, 1, 1)};
+  auto tree{tree::NodeTree(1, 1, 1)};
   std::vector<int> cnt1{1, 1};
   EXPECT_EQ(tree.Gini(cnt1, 2), 0.5);
   std::vector<int> cnt2{5, 0, 0, 0, 0};
@@ -48,7 +48,7 @@ TEST(UnitNodeTree, FindBestSplit) {
     1,
     0
   };
-  auto tree{DTree::NodeTree(1, 1, 1)};
+  auto tree{tree::NodeTree(1, 1, 1)};
   auto [idx, threshold] = tree.FindBestThreshold(feature_rows, labels, 2);
   EXPECT_EQ(idx, 0);
   EXPECT_EQ(threshold, 2.5);

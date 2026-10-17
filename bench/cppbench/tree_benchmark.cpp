@@ -7,7 +7,7 @@
 
 namespace {
 
-DTree::Data load_car() {
+tree::Data load_car() {
   const auto path =
       std::filesystem::path{TREE_RACE_SOURCE_DIR} / "datasets" / "car_eval.csv";
   io::CSVReader<7> in(path.string());
@@ -23,7 +23,7 @@ DTree::Data load_car() {
 
 void BM_node_tree__fit_car(benchmark::State &state) {
   auto data{load_car()};
-  auto tree{DTree::NodeTree(5, 1, 100)};
+  auto tree{tree::NodeTree(5, 1, 100)};
 
   for (auto _ : state) {
     tree.Fit(data);
@@ -43,7 +43,7 @@ void BM_flat_tree__fit_car(benchmark::State &state) {
 
 void BM_node_tree__predict_car(benchmark::State &state) {
   auto data{load_car()};
-  auto tree{DTree::NodeTree(5, 1, 100)};
+  auto tree{tree::NodeTree(5, 1, 100)};
   tree.Fit(data);
 
   for (auto _ : state) {

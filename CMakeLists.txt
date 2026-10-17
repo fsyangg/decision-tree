@@ -11,20 +11,17 @@ find_package(GTest REQUIRED)
 add_executable(tree_exe
     src/main.cpp
     src/csv.h
-    src/tree.h
     src/node_tree.h
 )
 add_executable(tree_benchmark
     bench/cppbench/tree_benchmark.cpp
     src/csv.h
-    src/tree.h
     src/node_tree.h
 )
 add_executable(tree_tests
     tst/tree_tests.cpp
     tst/unit_tests.cpp
     src/csv.h
-    src/tree.h
     src/node_tree.h
 )
 
