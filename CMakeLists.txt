@@ -31,7 +31,7 @@ add_executable(tree_tests
 foreach(target tree_exe tree_benchmark tree_tests)
     target_include_directories(${target} PRIVATE src)
     target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-    target_compile_options(${target} PRIVATE -O3 -DNDEBUG)
+    target_compile_options(${target} PRIVATE -O3 -DNDEBUG -g)
 endforeach()
 
 target_link_libraries(tree_benchmark PRIVATE benchmark::benchmark_main)

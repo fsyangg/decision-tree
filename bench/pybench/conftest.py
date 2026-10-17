@@ -23,6 +23,7 @@ def make_classifier(request):
     def factory():
         return DecisionTreeClassifier(
             criterion=opt("criterion"),
+            splitter="best",
             max_depth=opt("max_depth"),
             min_samples_split=opt("min_samples_split"),
             min_samples_leaf=opt("min_samples_leaf"),
