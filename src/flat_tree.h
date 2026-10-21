@@ -19,7 +19,7 @@ class FlatTree
     {
     }
     void build_tree();
-    int predict(std::vector<int>& row);
+    int predict(const std::vector<int>& row);
 
    private:
     std::pair<int, float> split(size_t index, size_t start, size_t end);
@@ -44,7 +44,7 @@ class FlatTree
     [[maybe_unused]] size_t num_categories_;
 };
 
-inline int FlatTree::predict(std::vector<int>& sample)
+inline int FlatTree::predict(const std::vector<int>& sample)
 {
     size_t node{0};
     while (!is_leaf_[node])
@@ -148,6 +148,7 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
             attr_and_label[i] = {attr_val, label};
         }
 
+        // this one line is taking forever for some reason
         std::sort(attr_and_label.begin(), attr_and_label.end());
         for (size_t i{0}; i < attr_and_label.size(); ++i)
         {

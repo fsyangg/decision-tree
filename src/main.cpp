@@ -1,5 +1,5 @@
 #include "csv.h"
-#include "node_tree.h"
+#include "flat_tree.h"
 
 #include <filesystem>
 #include <iostream>
@@ -34,6 +34,10 @@ int main() {
     std::cout << "loaded tennis rows: " << rows.size()
         << ", labels: " << targets.size() << '\n';
 
-    auto tree{tree::NodeTree(4, 4, 4)};
-    tree.Fit({rows, targets});
+    auto ftree{tree::FlatTree(rows, targets)};
+    for (int i{0}; i < 1'000'000; ++i) {
+        ftree.build_tree();
+    }
+    auto i{ftree.predict(rows[0])};
+    std::cout << "done" << '\n';
 }
