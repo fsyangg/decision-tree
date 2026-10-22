@@ -1,13 +1,15 @@
 #pragma once
 
-#include <tracy/Tracy.hpp>
-
 #include <algorithm>
 #include <cassert>
 #include <functional>
 #include <limits>
 #include <stack>
+#include <tracy/Tracy.hpp>
 #include <vector>
+#if TREE_SIMD
+#include <arm_neon.h>
+#endif
 
 namespace tree
 {
@@ -24,8 +26,14 @@ class FlatTree
    private:
     std::pair<int, float> split(size_t index, size_t start, size_t end);
 
-    template<size_t ArrSize>
+#if TREE_SIMD
+    static constexpr uint16_t iota_vec[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    float32_t gini_entropy(uint16x8_t counts, uint16_t n);
+    uint16x8_t inc_u16x8(uint16x8_t v, uint16_t idx);
+#else
+    template <size_t ArrSize>
     float gini_entropy(const std::array<int, ArrSize>& counts, size_t n);
+#endif
 
     size_t hoare_partition(size_t start, size_t end, int feature, float threshold);
 
@@ -104,18 +112,44 @@ inline void FlatTree::build_tree()
     }
 }
 
-template<size_t ArrSize>
+#if TREE_SIMD
+inline float32_t FlatTree::gini_entropy(uint16x8_t counts, uint16_t n)
+{
+    ZoneScopedN("simd-gini");
+    float16x8_t num = vcvtq_f16_u16(counts);
+    float16x8_t denom = vcvtq_f16_u16(vdupq_n_u16(n));
+
+    float16x8_t res = vdivq_f16(num, denom);
+    res = vmulq_f16(res, res);
+
+    // no horizontal f16 add intrinsic for neon, need to convert to two float32x4_t
+    float32x4_t hi = vcvt_high_f32_f16(res);
+    float32x4_t lo = vcvt_f32_f16(vget_low_f16(res));
+    return static_cast<float32_t>(1.0) - vaddvq_f32(vaddq_f32(lo, hi));
+}
+
+inline uint16x8_t FlatTree::inc_u16x8(uint16x8_t v, uint16_t idx)
+{
+    // v[idx] - 0xFFFF
+    uint16x8_t iota = vld1q_u16(iota_vec);
+    uint16x8_t mask = vceqq_u16(iota, vdupq_n_u16(static_cast<uint16_t>(idx)));
+    return vsubq_u16(v, mask);
+}
+#else
+template <size_t ArrSize>
 inline float FlatTree::gini_entropy(const std::array<int, ArrSize>& counts, size_t n)
 {
-    ZoneScoped;
+    ZoneScopedN("non-simd-gini");
     if (n == 0) return 0.0;
     auto sum_sq{0.0f};
-    for (auto i{0uz}; i < ArrSize; ++i) {
+    for (auto i{0uz}; i < ArrSize; ++i)
+    {
         auto ratio{static_cast<float>(counts[i]) / static_cast<float>(n)};
         sum_sq += ratio * ratio;
     }
     return 1.0 - sum_sq;
 }
+#endif
 
 inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t end)
 {
@@ -131,8 +165,10 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
     std::vector<std::pair<int, int>> attr_and_label;
     attr_and_label.resize(end - start);
 
+#if !TREE_SIMD
     std::array<int, 100> left_count;
     std::array<int, 100> right_count;
+#endif
 
     auto best_score{std::numeric_limits<float>::max()};
     auto best_attr{-1};
@@ -140,21 +176,29 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
 
     for (size_t attr{0}; attr < num_attr_; ++attr)
     {
+#if TREE_SIMD
+        uint16x8_t total_count = vdupq_n_u16(0);
+        uint16x8_t left_count = vdupq_n_u16(0);
+#else
         std::fill(left_count.begin(), left_count.end(), 0);
         std::fill(right_count.begin(), right_count.end(), 0);
+#endif
 
         for (size_t i{0}; i < attr_and_label.size(); ++i)
         {
             auto attr_val{data_.get()[samples_[start + i]][attr]};
             auto label{labels_.get()[samples_[start + i]]};
 
+#if TREE_SIMD
+            total_count = inc_u16x8(total_count, label);
+#else
             ++right_count[label];
+#endif
             attr_and_label[i] = {attr_val, label};
         }
 
-        // this one line is taking forever for some reason
         std::sort(attr_and_label.begin(), attr_and_label.end(),
-            [](const std::pair<int, int>& p1, const std::pair<int, int>& p2){ return p1.first < p2.first; });
+                  [](const std::pair<int, int>& p1, const std::pair<int, int>& p2) { return p1.first < p2.first; });
         for (size_t i{0}; i < attr_and_label.size(); ++i)
         {
             auto [attr_val, label] = attr_and_label[i];
@@ -162,7 +206,13 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
             {
                 auto n_left{i};
                 auto n_right{attr_and_label.size() - i};
+#if TREE_SIMD
+                auto left{n_left * gini_entropy(left_count, n_left)};
+                auto right{n_right * gini_entropy(vsubq_u16(total_count, left_count), n_right)};
+                auto score{left + right};
+#else
                 auto score{n_left * gini_entropy(left_count, n_left) + n_right * gini_entropy(right_count, n_right)};
+#endif
                 if (score < best_score)
                 {
                     best_score = score;
@@ -170,8 +220,12 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
                     best_threshold = (attr_and_label[i - 1].first + attr_val) / 2.0f;
                 }
             }
+#if TREE_SIMD
+            left_count = inc_u16x8(left_count, label);
+#else
             ++left_count[label];
             --right_count[label];
+#endif
         }
     }
     return {best_attr, best_threshold};

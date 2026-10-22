@@ -13,6 +13,8 @@ option(TRACY_ON_DEMAND "" OFF)
 option(TRACY_NO_EXIT "" ON) # for short progs
 add_subdirectory(third_party/tracy)
 
+option(TREE_SIMD "" ON)
+
 add_executable(tree_exe
     src/main.cpp
     src/loaders.h
@@ -30,14 +32,14 @@ target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
 add_executable(tree_tests
     tst/tree_tests.cpp
     tst/unit_tests.cpp
-    src/csv.h
-    src/node_tree.h
+    src/loaders.h
+    src/flat_tree.h
 )
 target_compile_options(tree_tests PRIVATE -O3 -DNDEBUG)
 
 foreach(target tree_exe tree_benchmark tree_tests)
     target_include_directories(${target} PRIVATE src)
-    target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}" TREE_SIMD)
 endforeach()
 
 target_link_libraries(tree_exe PUBLIC Tracy::TracyClient)
