@@ -25,18 +25,18 @@ class FlatTree
 
    private:
     std::pair<int, float> split(size_t index, size_t start, size_t end);
+    template <size_t ArrSize>
+    float gini_entropy(const std::array<int, ArrSize>& counts, size_t n);
 
 #if TREE_SIMD
+    std::pair<int, float> split_simd(size_t index, size_t start, size_t end);
     static constexpr uint16_t iota_vec[8] = {0, 1, 2, 3, 4, 5, 6, 7};
     float32_t gini_entropy(uint16x8_t counts, uint16_t n);
     uint16x8_t inc_u16x8(uint16x8_t v, uint16_t idx);
+#endif
 
     uint16_t cmb_u8(uint8_t lo, uint8_t hi);
     std::pair<uint8_t, uint8_t> sep_u16(uint16_t x);
-#else
-    template <size_t ArrSize>
-    float gini_entropy(const std::array<int, ArrSize>& counts, size_t n);
-#endif
 
     size_t hoare_partition(size_t start, size_t end, int feature, float threshold);
 
@@ -102,7 +102,11 @@ inline void FlatTree::build_tree()
             threshold_.resize(index + 1);
         }
 
+#if TREE_SIMD
+        auto [best_feat, best_threshold] = split_simd(index, start, end);
+#else
         auto [best_feat, best_threshold] = split(index, start, end);
+#endif
         feature_[index] = best_feat;
         threshold_[index] = best_threshold;
 
@@ -138,7 +142,8 @@ inline uint16x8_t FlatTree::inc_u16x8(uint16x8_t v, uint16_t idx)
     uint16x8_t mask = vceqq_u16(iota, vdupq_n_u16(static_cast<uint16_t>(idx)));
     return vsubq_u16(v, mask);
 }
-#else
+#endif
+
 template <size_t ArrSize>
 inline float FlatTree::gini_entropy(const std::array<int, ArrSize>& counts, size_t n)
 {
@@ -152,7 +157,6 @@ inline float FlatTree::gini_entropy(const std::array<int, ArrSize>& counts, size
     }
     return 1.0 - sum_sq;
 }
-#endif
 
 inline uint16_t FlatTree::cmb_u8(uint8_t lo, uint8_t hi) {
     return static_cast<uint16_t>(lo) | (static_cast<uint16_t>(hi) << 8);
@@ -177,10 +181,8 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
     std::vector<uint16_t> attr_and_label;
     attr_and_label.resize(end - start);
 
-#if !TREE_SIMD
     std::array<int, 100> left_count;
     std::array<int, 100> right_count;
-#endif
 
     auto best_score{std::numeric_limits<float>::max()};
     auto best_attr{static_cast<uint8_t>(0)};
@@ -188,24 +190,15 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
 
     for (size_t attr{0}; attr < num_attr_; ++attr)
     {
-#if TREE_SIMD
-        uint16x8_t total_count = vdupq_n_u16(0);
-        uint16x8_t left_count = vdupq_n_u16(0);
-#else
         std::fill(left_count.begin(), left_count.end(), 0);
         std::fill(right_count.begin(), right_count.end(), 0);
-#endif
 
         for (size_t i{0}; i < attr_and_label.size(); ++i)
         {
             auto attr_val{static_cast<uint8_t>(data_.get()[samples_[start + i]][attr])};
             auto label{static_cast<uint8_t>(labels_.get()[samples_[start + i]])};
 
-#if TREE_SIMD
-            total_count = inc_u16x8(total_count, label);
-#else
             ++right_count[label];
-#endif
             attr_and_label[i] = cmb_u8(label, attr_val);
         }
 
@@ -219,13 +212,7 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
             {
                 auto n_left{i};
                 auto n_right{attr_and_label.size() - i};
-#if TREE_SIMD
-                auto left{n_left * gini_entropy(left_count, n_left)};
-                auto right{n_right * gini_entropy(vsubq_u16(total_count, left_count), n_right)};
-                auto score{left + right};
-#else
                 auto score{n_left * gini_entropy(left_count, n_left) + n_right * gini_entropy(right_count, n_right)};
-#endif
                 if (score < best_score)
                 {
                     best_score = score;
@@ -234,16 +221,70 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
                 }
                 old_val = attr_val;
             }
-#if TREE_SIMD
-            left_count = inc_u16x8(left_count, label);
-#else
             ++left_count[label];
             --right_count[label];
-#endif
         }
     }
     return {static_cast<int>(best_attr), static_cast<float>(best_threshold)};
 }
+
+#if TREE_SIMD
+inline std::pair<int, float> FlatTree::split_simd(size_t index, size_t start, size_t end)
+{
+    ZoneScoped;
+    auto& labels{labels_.get()};
+    auto same_label = [&](int s) { return labels[s] == labels[samples_[start]]; };
+    is_leaf_[index] = end - start < 5 || std::all_of(samples_.begin() + start, samples_.begin() + end, same_label);
+    if (is_leaf_[index]) return {labels[samples_[start]], 0.0f};
+
+    std::vector<uint16_t> attr_and_label;
+    attr_and_label.resize(end - start);
+
+    auto best_score{std::numeric_limits<float>::max()};
+    auto best_attr{static_cast<uint8_t>(0)};
+    auto best_threshold{0.0f};
+
+    for (size_t attr{0}; attr < num_attr_; ++attr)
+    {
+        uint16x8_t total_count = vdupq_n_u16(0);
+        uint16x8_t left_count = vdupq_n_u16(0);
+
+        for (size_t i{0}; i < attr_and_label.size(); ++i)
+        {
+            auto attr_val{static_cast<uint8_t>(data_.get()[samples_[start + i]][attr])};
+            auto label{static_cast<uint8_t>(labels_.get()[samples_[start + i]])};
+
+            total_count = inc_u16x8(total_count, label);
+            attr_and_label[i] = cmb_u8(label, attr_val);
+        }
+
+        std::sort(attr_and_label.begin(), attr_and_label.end(),
+                [](uint16_t a, uint16_t b){ return (a >> 8) < (b >> 8); });
+        auto old_val{static_cast<uint8_t>(std::numeric_limits<uint8_t>::max())};
+        for (size_t i{0}; i < attr_and_label.size(); ++i)
+        {
+            auto [label, attr_val] = sep_u16(attr_and_label[i]);
+            if (old_val != attr_val)
+            {
+                auto n_left{i};
+                auto n_right{attr_and_label.size() - i};
+                auto left{n_left * gini_entropy(left_count, n_left)};
+                auto right{n_right * gini_entropy(vsubq_u16(total_count, left_count), n_right)};
+                auto score{left + right};
+                if (score < best_score)
+                {
+                    best_score = score;
+                    best_attr = static_cast<int>(attr);
+                    best_threshold = static_cast<float>(old_val + attr_val) / 2.0f;
+                }
+                old_val = attr_val;
+            }
+            left_count = inc_u16x8(left_count, label);
+        }
+    }
+    return {static_cast<int>(best_attr), static_cast<float>(best_threshold)};
+}
+#endif
 
 inline size_t FlatTree::hoare_partition(size_t start, size_t end, int feature, float threshold)
 {
