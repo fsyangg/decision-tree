@@ -28,10 +28,4 @@ To run scikit-learn with the same settings as the C++ trees:
 
 ## Benchmark
 
-Car evaluation dataset (`datasets/car_eval.csv`: 1728 rows, 6 features)
-
-| | Fit | Predict (all 1728 rows) | Train accuracy |
-|---|---|---|---|
-| `FlatTree` | 0.36 ms | 8.6 µs | 98.55% |
-| `NodeTree` | 0.55 ms | 9.6 µs | 98.61% |
-| scikit-learn 1.9.0 | 0.43 ms | 38.4 µs | 98.50% |
+See PERF.md.
