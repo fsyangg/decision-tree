@@ -22,8 +22,8 @@ target_compile_options(tree_exe PRIVATE -O2 -g -DNDEBUG)
 
 add_executable(tree_benchmark
     bench/cppbench/tree_benchmark.cpp
-    src/csv.h
-    src/node_tree.h
+    src/loaders.h
+    src/flat_tree.h
 )
 target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
 

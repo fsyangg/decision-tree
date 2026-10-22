@@ -25,7 +25,7 @@ class FlatTree
     std::pair<int, float> split(size_t index, size_t start, size_t end);
 
     template<size_t ArrSize>
-    float gini_entropy(std::array<int, ArrSize> counts, size_t n);
+    float gini_entropy(const std::array<int, ArrSize>& counts, size_t n);
 
     size_t hoare_partition(size_t start, size_t end, int feature, float threshold);
 
@@ -105,7 +105,7 @@ inline void FlatTree::build_tree()
 }
 
 template<size_t ArrSize>
-inline float FlatTree::gini_entropy(std::array<int, ArrSize> counts, size_t n)
+inline float FlatTree::gini_entropy(const std::array<int, ArrSize>& counts, size_t n)
 {
     ZoneScoped;
     if (n == 0) return 0.0;
@@ -153,7 +153,8 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
         }
 
         // this one line is taking forever for some reason
-        std::sort(attr_and_label.begin(), attr_and_label.end());
+        std::sort(attr_and_label.begin(), attr_and_label.end(),
+            [](const std::pair<int, int>& p1, const std::pair<int, int>& p2){ return p1.first < p2.first; });
         for (size_t i{0}; i < attr_and_label.size(); ++i)
         {
             auto [attr_val, label] = attr_and_label[i];
