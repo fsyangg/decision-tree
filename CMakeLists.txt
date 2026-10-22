@@ -8,31 +8,41 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(benchmark REQUIRED)
 find_package(GTest REQUIRED)
 
+option(TRACY_ENABLE "" OFF)
+option(TRACY_ON_DEMAND "" OFF)
+option(TRACY_NO_EXIT "" ON) # for short progs
+add_subdirectory(third_party/tracy)
+
 add_executable(tree_exe
     src/main.cpp
-    src/csv.h
-    src/node_tree.h
+    src/loaders.h
+    src/flat_tree.h
 )
+target_compile_options(tree_exe PRIVATE -O2 -g -DNDEBUG)
+
 add_executable(tree_benchmark
     bench/cppbench/tree_benchmark.cpp
     src/csv.h
     src/node_tree.h
 )
+target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
+
 add_executable(tree_tests
     tst/tree_tests.cpp
     tst/unit_tests.cpp
     src/csv.h
     src/node_tree.h
 )
+target_compile_options(tree_tests PRIVATE -O3 -DNDEBUG)
 
 foreach(target tree_exe tree_benchmark tree_tests)
     target_include_directories(${target} PRIVATE src)
     target_compile_definitions(${target} PRIVATE TREE_RACE_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-    target_compile_options(${target} PRIVATE -O2 -DNDEBUG -g)
 endforeach()
 
-target_link_libraries(tree_benchmark PRIVATE benchmark::benchmark_main)
-target_link_libraries(tree_tests PRIVATE GTest::gtest_main)
+target_link_libraries(tree_exe PUBLIC Tracy::TracyClient)
+target_link_libraries(tree_benchmark PRIVATE benchmark::benchmark_main Tracy::TracyClient)
+target_link_libraries(tree_tests PRIVATE GTest::gtest_main Tracy::TracyClient)
 
 enable_testing()
 add_test(NAME tree_tests COMMAND tree_tests)

@@ -1,11 +1,11 @@
 #pragma once
 
+#include <tracy/Tracy.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <functional>
 #include <limits>
-#include <numeric>
-#include <optional>
 #include <stack>
 #include <vector>
 
@@ -46,6 +46,7 @@ class FlatTree
 
 inline int FlatTree::predict(const std::vector<int>& sample)
 {
+    ZoneScoped;
     size_t node{0};
     while (!is_leaf_[node])
     {
@@ -64,6 +65,7 @@ inline int FlatTree::predict(const std::vector<int>& sample)
 
 inline void FlatTree::build_tree()
 {
+    ZoneScoped;
     auto& data{data_.get()};
     auto& labels{labels_.get()};
     num_attr_ = data[0].size();
@@ -105,6 +107,7 @@ inline void FlatTree::build_tree()
 template<size_t ArrSize>
 inline float FlatTree::gini_entropy(std::array<int, ArrSize> counts, size_t n)
 {
+    ZoneScoped;
     if (n == 0) return 0.0;
     auto sum_sq{0.0f};
     for (auto i{0uz}; i < ArrSize; ++i) {
@@ -116,6 +119,7 @@ inline float FlatTree::gini_entropy(std::array<int, ArrSize> counts, size_t n)
 
 inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t end)
 {
+    ZoneScoped;
     // could potentially inline. but idt it's necessary
     auto& labels{labels_.get()};
     auto same_label = [&](int s) { return labels[s] == labels[samples_[start]]; };
@@ -174,6 +178,7 @@ inline std::pair<int, float> FlatTree::split(size_t index, size_t start, size_t 
 
 inline size_t FlatTree::hoare_partition(size_t start, size_t end, int feature, float threshold)
 {
+    ZoneScoped;
     auto value = [&](size_t i) { return data_.get()[samples_[i]][feature]; };
     auto i{start};
     auto j{end - 1};

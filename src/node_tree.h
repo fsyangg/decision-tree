@@ -5,6 +5,7 @@
 #include <numeric>
 #include <queue>
 #include <vector>
+#include <memory>
 
 namespace tree
 {
