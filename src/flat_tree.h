@@ -237,8 +237,18 @@ inline std::pair<int, float> FlatTree::split_simd(size_t index, size_t start, si
     is_leaf_[index] = end - start < 5 || std::all_of(samples_.begin() + start, samples_.begin() + end, same_label);
     if (is_leaf_[index]) return {labels[samples_[start]], 0.0f};
 
-    std::vector<uint16_t> attr_and_label;
-    attr_and_label.resize(end - start);
+    using maxcnt_t = uint16_t;          // at most 2^16-1 rows per label
+    constexpr int MAX_LABEL = 8;        // at most 8 labels (0...7)
+    constexpr int MAX_ATTR_VAL = 256;   // at most 256 attribute values (0...255)
+
+    std::array<std::array<maxcnt_t, MAX_LABEL>, MAX_ATTR_VAL> hist;
+    uint16x8_t total_counts = vdupq_n_u16(0);
+
+    for (size_t i{start}; i < end; ++i)
+    {
+        auto label{labels_.get()[samples_[i]]};
+        total_counts = inc_u16x8(total_counts, label);
+    }
 
     auto best_score{std::numeric_limits<float>::max()};
     auto best_attr{static_cast<uint8_t>(0)};
@@ -246,40 +256,37 @@ inline std::pair<int, float> FlatTree::split_simd(size_t index, size_t start, si
 
     for (size_t attr{0}; attr < num_attr_; ++attr)
     {
-        uint16x8_t total_count = vdupq_n_u16(0);
-        uint16x8_t left_count = vdupq_n_u16(0);
+        int max_attr_val{0};
+        hist = {};
 
-        for (size_t i{0}; i < attr_and_label.size(); ++i)
+        for (size_t i{start}; i < end; ++i)
         {
-            auto attr_val{static_cast<uint8_t>(data_.get()[samples_[start + i]][attr])};
-            auto label{static_cast<uint8_t>(labels_.get()[samples_[start + i]])};
-
-            total_count = inc_u16x8(total_count, label);
-            attr_and_label[i] = cmb_u8(label, attr_val);
+            auto attr_val{data_.get()[samples_[i]][attr]};
+            auto label{labels_.get()[samples_[i]]};
+            max_attr_val = std::max(max_attr_val, attr_val);
+            ++hist[attr_val][label];
         }
 
-        std::sort(attr_and_label.begin(), attr_and_label.end(),
-                [](uint16_t a, uint16_t b){ return (a >> 8) < (b >> 8); });
-        auto old_val{static_cast<uint8_t>(std::numeric_limits<uint8_t>::max())};
-        for (size_t i{0}; i < attr_and_label.size(); ++i)
+        uint16x8_t left_counts = vdupq_n_u16(0);
+        uint16_t n_left{0};
+        for (size_t i{0}; i < max_attr_val; ++i)
         {
-            auto [label, attr_val] = sep_u16(attr_and_label[i]);
-            if (old_val != attr_val)
+            uint16x8_t bar = vld1q_u16(hist[i].data());
+            left_counts = vaddq_u16(left_counts, bar);
+            n_left += vaddvq_u16(bar);
+
+            auto n_right{end - start - n_left};
+            uint16x8_t right_counts = vsubq_u16(total_counts, left_counts);
+            auto left{n_left * gini_entropy(left_counts, n_left)};
+            auto right{n_right * gini_entropy(right_counts, n_right)};
+            auto score{left + right};
+
+            if (score < best_score)
             {
-                auto n_left{i};
-                auto n_right{attr_and_label.size() - i};
-                auto left{n_left * gini_entropy(left_count, n_left)};
-                auto right{n_right * gini_entropy(vsubq_u16(total_count, left_count), n_right)};
-                auto score{left + right};
-                if (score < best_score)
-                {
-                    best_score = score;
-                    best_attr = static_cast<int>(attr);
-                    best_threshold = static_cast<float>(old_val + attr_val) / 2.0f;
-                }
-                old_val = attr_val;
+                best_score = score;
+                best_attr = static_cast<int>(attr);
+                best_threshold = static_cast<float>(2 * i + 1) / 2.0f;
             }
-            left_count = inc_u16x8(left_count, label);
         }
     }
     return {static_cast<int>(best_attr), static_cast<float>(best_threshold)};
