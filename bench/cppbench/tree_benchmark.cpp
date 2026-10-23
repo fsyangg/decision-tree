@@ -53,7 +53,7 @@ void BM_flat_tree__predict_car(benchmark::State &state) {
 } // namespace
 
 BENCHMARK(BM_node_tree__fit_car);
-BENCHMARK(BM_flat_tree__fit_car);
+BENCHMARK(BM_flat_tree__fit_car)->Repetitions(5)->ReportAggregatesOnly();
 BENCHMARK(BM_node_tree__predict_car);
-BENCHMARK(BM_flat_tree__predict_car);
+BENCHMARK(BM_flat_tree__predict_car)->Repetitions(5)->ReportAggregatesOnly();
 BENCHMARK_MAIN();
