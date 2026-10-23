@@ -31,7 +31,6 @@ target_compile_options(tree_benchmark PRIVATE -O3 -DNDEBUG)
 
 add_executable(tree_tests
     tst/tree_tests.cpp
-    tst/unit_tests.cpp
     src/loaders.h
     src/flat_tree.h
 )

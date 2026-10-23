@@ -9,7 +9,7 @@ TEST(Sanity, Addition) {
   EXPECT_EQ(2 + 2, 4);
 }
 
-using Data = std::pair<std::vector<std::vector<int>>, std::vector<int>>;
+using Data = std::pair<std::vector<std::vector<tree::FlatTree::sample_t>>, std::vector<tree::FlatTree::label_t>>;
 class DatasetTest : public ::testing::Test
 {
 protected:
@@ -31,9 +31,9 @@ protected:
   {
     const auto path = std::filesystem::path{TREE_RACE_SOURCE_DIR} / "datasets" / "tennis.csv";
     io::CSVReader<5> in(path.string());
-    std::array<int, 5> a;
-    std::vector<std::vector<int>> row_data;
-    std::vector<int> target_data;
+    std::array<tree::FlatTree::sample_t, 5> a;
+    std::vector<std::vector<tree::FlatTree::sample_t>> row_data;
+    std::vector<tree::FlatTree::label_t> target_data;
     while (in.read_row(a[0], a[1], a[2], a[3], a[4])) {
       row_data.push_back({a[0], a[1], a[2], a[3]});
       target_data.push_back(a[4]);
@@ -47,7 +47,7 @@ class CarTest : public DatasetTest
 protected:
   void SetUp() override
   {
-    data = tree::load_car();
+    data = tree::load_car<tree::FlatTree::sample_t, tree::FlatTree::label_t>();
   }
 };
 

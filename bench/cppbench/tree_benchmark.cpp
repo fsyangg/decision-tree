@@ -17,7 +17,7 @@ void BM_node_tree__fit_car(benchmark::State &state) {
 }
 
 void BM_flat_tree__fit_car(benchmark::State &state) {
-  auto data{tree::load_car()};
+  auto data{tree::load_car<tree::FlatTree::sample_t, tree::FlatTree::label_t>()};
   tree::FlatTree tree{data.first, data.second};
 
   for (auto _ : state) {
@@ -39,7 +39,7 @@ void BM_node_tree__predict_car(benchmark::State &state) {
 }
 
 void BM_flat_tree__predict_car(benchmark::State &state) {
-  auto data{tree::load_car()};
+  auto data{tree::load_car<tree::FlatTree::sample_t, tree::FlatTree::label_t>()};
   tree::FlatTree tree{data.first, data.second};
   tree.build_tree();
 

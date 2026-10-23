@@ -5,7 +5,7 @@
 
 int main() {
     ZoneScoped;
-    const auto [rows, targets] = tree::load_car();
+    const auto [rows, targets] = tree::load_car<tree::FlatTree::sample_t, tree::FlatTree::label_t>();
     auto ftree{tree::FlatTree(rows, targets)};
     ftree.build_tree();
     for (const auto& row : rows) {
